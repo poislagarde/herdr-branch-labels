@@ -1,47 +1,50 @@
 id = "poislagarde.branch-labels"
 name = "Branch Labels"
-version = "0.1.1"
+version = "0.2.0"
 min_herdr_version = "0.9.0"
 description = "Format sidebar branch labels with a configurable regular expression."
 platforms = ["linux", "macos"]
 
+[[build]]
+command = ["cargo", "build", "--release", "--locked"]
+
 [[startup]]
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[actions]]
 id = "refresh"
 title = "Refresh sidebar branch labels"
 contexts = ["workspace"]
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "workspace.created"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "workspace.updated"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "workspace.renamed"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "workspace.closed"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "workspace.focused"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "pane.focused"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "worktree.created"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]
 
 [[events]]
 on = "worktree.opened"
-command = ["python3", "plugin.py", "refresh"]
+command = ["./target/release/herdr-branch-labels", "refresh"]

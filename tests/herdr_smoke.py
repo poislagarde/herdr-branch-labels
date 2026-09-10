@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify the plugin on disposable headless Herdr servers and Git worktrees.
 
-Requires Python 3.9+, Git, and Herdr 0.9.0+. All config, state, sockets,
+Requires Python 3.9+, Cargo, Git, and Herdr 0.9.0+. All config, state, sockets,
 repositories, and shell startup files live under a private temporary directory.
 """
 
@@ -20,10 +20,10 @@ PLUGIN_ID = "poislagarde.branch-labels"
 TIMEOUT = 20
 
 
-def command(argv, cwd, env):
+def command(argv, cwd, env, timeout=TIMEOUT):
     result = subprocess.run(
         [str(arg) for arg in argv], cwd=cwd, env=env,
-        capture_output=True, text=True, timeout=TIMEOUT,
+        capture_output=True, text=True, timeout=timeout,
     )
     if result.returncode:
         raise AssertionError("{} failed ({})\n{}\n{}".format(
@@ -218,7 +218,7 @@ def smoke(root, herdr, plugin_dir, servers):
     print("PASS: manual labels, including labels matching the prefix pattern, are preserved")
 
     (config_dir / "config.json").write_text(json.dumps({
-        "pattern": r"^ticket/[0-9]+-(.+)$", "replacement": r"\1",
+        "pattern": r"^ticket/[0-9]+-(.+)$", "replacement": "$1",
     }))
     configured_branch = "ticket/123-custom-regex"
     run_git("checkout", "-b", configured_branch)
@@ -252,6 +252,9 @@ def main():
         print("SKIP: an installed Herdr and Unix sockets are required")
         return 0
     plugin_dir = Path(__file__).resolve().parent.parent
+    cargo = shutil.which("cargo")
+    assert cargo, "cargo is required to build the Rust plugin before linking"
+    command([cargo, "build", "--release", "--locked"], plugin_dir, os.environ, timeout=300)
     servers = []
     with tempfile.TemporaryDirectory(prefix="hbl-", dir="/tmp") as directory:
         try:

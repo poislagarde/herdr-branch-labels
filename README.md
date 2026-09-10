@@ -4,14 +4,15 @@ Format Git branch labels in the Spaces sidebar with your own regular
 expression and replacement. Branch names stay unchanged until you configure
 a pattern; the plugin assumes no naming convention.
 
-Requires Herdr 0.9.0 or newer, Python 3.9 or newer, and Git on macOS or Linux.
+Requires Herdr 0.9.0 or newer, Rust/Cargo, and Git on macOS or Linux.
+Herdr builds the native Rust binary during installation.
 
 ## Install
 
 Install the tagged release from GitHub:
 
 ```sh
-herdr plugin install poislagarde/herdr-branch-labels --ref v0.1.1
+herdr plugin install poislagarde/herdr-branch-labels --ref v0.2.0
 ```
 
 In `~/.config/herdr/config.toml`, replace the existing Spaces rows with:
@@ -51,7 +52,8 @@ Create `config.json` in that directory. The default configuration is:
 
 Omitting `pattern`, or setting it to `null`, disables formatting. When you
 provide a pattern, `replacement` defaults to an empty string. The pattern uses
-Python regular-expression syntax. The plugin replaces only the first match
+[fancy-regex syntax](https://docs.rs/fancy-regex/latest/fancy_regex/), including
+lookahead and lookbehind. The plugin replaces only the first match
 in each branch. An unmatched branch stays unchanged. If a replacement would
 produce an empty label, the original branch is retained.
 
@@ -71,12 +73,14 @@ the issue key and description, then reference them in the replacement:
 ```json
 {
   "pattern": "^ticket/([A-Z]+-[0-9]+)-(.+)$",
-  "replacement": "\\g<2> [\\g<1>]"
+  "replacement": "$2 [$1]"
 }
 ```
 
-JSON requires doubled backslashes in replacement references. After changing
-`config.json`, run the refresh action again; no config reload is needed.
+Replacements use `$1` for a numbered capture, `${name}` for a named capture,
+and `$$` for a literal dollar sign. Use `${1}` before adjoining text to make
+the capture boundary explicit. After changing `config.json`, run the refresh
+action again; no config reload is needed.
 
 ## Refresh behavior
 
@@ -116,10 +120,10 @@ herdr plugin disable poislagarde.branch-labels
 
 ## Test
 
-Run from this directory:
+Run from this directory. The isolated Herdr smoke test also needs Python 3.9+:
 
 ```sh
-python3 -m unittest discover -s tests
+cargo test --locked
 python3 tests/herdr_smoke.py
 ```
 
@@ -130,6 +134,7 @@ Clone the repository and link the checkout:
 ```sh
 git clone https://github.com/poislagarde/herdr-branch-labels.git
 cd herdr-branch-labels
+cargo build --release --locked
 herdr plugin link "$(pwd)" --enabled
 herdr plugin action invoke poislagarde.branch-labels.refresh
 ```
