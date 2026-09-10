@@ -15,17 +15,20 @@ import time
 
 
 SOURCE = "plugin:poislagarde.branch-labels"
-DEFAULT_PATTERN = r"^[^/]+/[0-9]{4}-[0-9]{2}-[0-9]{2}-(?=.)"
 
 
 def formatter(config):
     """Compile configuration before making any metadata changes."""
     if not isinstance(config, dict) or set(config) - {"pattern", "replacement"}:
         raise ValueError("config.json accepts only pattern and replacement")
-    pattern = config.get("pattern", DEFAULT_PATTERN)
+    pattern = config.get("pattern")
     replacement = config.get("replacement", "")
-    if not isinstance(pattern, str) or not isinstance(replacement, str):
-        raise ValueError("pattern and replacement must be strings")
+    if not isinstance(replacement, str):
+        raise ValueError("replacement must be a string")
+    if pattern is None:
+        return lambda branch: branch
+    if not isinstance(pattern, str):
+        raise ValueError("pattern must be a string or null")
     regex = re.compile(pattern)
     # Validate replacement references even when no branch matches the pattern.
     regex.sub(replacement, "")

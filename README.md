@@ -1,8 +1,8 @@
 # Branch Labels for Herdr
 
-Show the useful part of a Git branch in the Spaces sidebar. For example,
-`feat/2026-09-10-improve-sidebar-labels` becomes `improve-sidebar-labels`.
-Customize the pattern and replacement to match your branch convention.
+Format Git branch labels in the Spaces sidebar with your own regular
+expression and replacement. Branch names stay unchanged until you configure
+a pattern; the plugin assumes no naming convention.
 
 Requires Herdr 0.9.0 or newer, Python 3.9 or newer, and Git on macOS or Linux.
 
@@ -11,7 +11,7 @@ Requires Herdr 0.9.0 or newer, Python 3.9 or newer, and Git on macOS or Linux.
 Install the tagged release from GitHub:
 
 ```sh
-herdr plugin install poislagarde/herdr-branch-labels --ref v0.1.0
+herdr plugin install poislagarde/herdr-branch-labels --ref v0.1.1
 ```
 
 In `~/.config/herdr/config.toml`, replace the existing Spaces rows with:
@@ -43,35 +43,34 @@ Find the plugin's configuration directory:
 herdr plugin config-dir poislagarde.branch-labels
 ```
 
-Create `config.json` in that directory. Both fields below are optional; these
-are their defaults:
+Create `config.json` in that directory. The default configuration is:
+
+```json
+{}
+```
+
+Omitting `pattern`, or setting it to `null`, disables formatting. When you
+provide a pattern, `replacement` defaults to an empty string. The pattern uses
+Python regular-expression syntax. The plugin replaces only the first match
+in each branch. An unmatched branch stays unchanged. If a replacement would
+produce an empty label, the original branch is retained.
+
+For example, configure this rule to turn `feature/improve-sidebar` into
+`improve-sidebar`:
 
 ```json
 {
-  "pattern": "^[^/]+/[0-9]{4}-[0-9]{2}-[0-9]{2}-(?=.)",
+  "pattern": "^feature/",
   "replacement": ""
 }
 ```
 
-The pattern uses Python regular-expression syntax. The plugin replaces only
-the first match in each branch. An unmatched branch stays unchanged. If a
-replacement would produce an empty label, the original branch is retained.
-
-To strip just `feat/` or `fix/`:
-
-```json
-{
-  "pattern": "^(?:feat|fix)/",
-  "replacement": ""
-}
-```
-
-To turn `feat/ABC-123-improve-sidebar` into `improve-sidebar [ABC-123]`, capture
+To turn `ticket/ABC-123-improve-sidebar` into `improve-sidebar [ABC-123]`, capture
 the issue key and description, then reference them in the replacement:
 
 ```json
 {
-  "pattern": "^[^/]+/([A-Z]+-[0-9]+)-(.+)$",
+  "pattern": "^ticket/([A-Z]+-[0-9]+)-(.+)$",
   "replacement": "\\g<2> [\\g<1>]"
 }
 ```

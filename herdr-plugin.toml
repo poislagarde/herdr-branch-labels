@@ -1,6 +1,6 @@
 id = "poislagarde.branch-labels"
 name = "Branch Labels"
-version = "0.1.0"
+version = "0.1.1"
 min_herdr_version = "0.9.0"
 description = "Format sidebar branch labels with a configurable regular expression."
 platforms = ["linux", "macos"]

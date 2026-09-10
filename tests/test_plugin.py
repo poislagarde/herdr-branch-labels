@@ -11,16 +11,22 @@ import plugin
 
 
 class FormattingTests(unittest.TestCase):
-    def test_default_convention(self):
-        format_branch = plugin.formatter({})
-        for branch in ("feat/2026-09-08-invoices", "fix/2026-09-09-invoices",
-                       "chore/2026-09-10-invoices"):
-            self.assertEqual(format_branch(branch), "invoices")
+    def test_missing_or_null_pattern_preserves_exact_input(self):
+        for config in ({}, {"pattern": None}, {"replacement": "unused"},
+                       {"pattern": None, "replacement": r"\1"}):
+            format_branch = plugin.formatter(config)
+            for branch in ("main", "feature/invoices", "ticket/ABC-42-invoices",
+                           "  retain whitespace  ", ""):
+                with self.subTest(config=config, branch=branch):
+                    self.assertEqual(format_branch(branch), branch)
+
+    def test_explicit_pattern_defaults_to_empty_replacement(self):
+        self.assertEqual(plugin.formatter({"pattern": r"^feature/"})("feature/invoices"),
+                         "invoices")
 
     def test_unmatched_and_empty_description_are_preserved(self):
-        format_branch = plugin.formatter({})
-        for branch in ("main", "feat/invoices", "2026-09-08-invoices",
-                       "feat/2026-09-08-", "team/feat/2026-09-08-invoices"):
+        format_branch = plugin.formatter({"pattern": r"^feature/"})
+        for branch in ("main", "ticket/invoices", "feature/", "team/feature/invoices"):
             self.assertEqual(format_branch(branch), branch)
 
     def test_custom_pattern_and_capture_replacement(self):
@@ -38,6 +44,7 @@ class FormattingTests(unittest.TestCase):
 
     def test_invalid_configuration(self):
         for config in ([], {"typo": "value"}, {"pattern": 1}, {"replacement": None},
+                       {"pattern": None, "replacement": 1},
                        {"pattern": "["}, {"pattern": "a", "replacement": r"\2"}):
             with self.subTest(config=config), self.assertRaises((ValueError, re.error)):
                 plugin.formatter(config)
@@ -46,8 +53,8 @@ class FormattingTests(unittest.TestCase):
 class LabelTests(unittest.TestCase):
     def setUp(self):
         self.workspace = {"workspace_id": "w1", "label": "checkout-name"}
-        self.branch = "fix/2026-09-09-real-description"
-        self.formatter = plugin.formatter({})
+        self.branch = "feature/real-description"
+        self.formatter = plugin.formatter({"pattern": r"^feature/"})
 
     def labels(self, hint, indented=True, **kwargs):
         return plugin.labels(self.workspace, hint, self.branch, indented, self.formatter, **kwargs)
@@ -55,6 +62,16 @@ class LabelTests(unittest.TestCase):
     def test_grouped_automatic_space_uses_actual_branch(self):
         self.assertEqual(self.labels({"custom_name": None}),
                          {"short_space": "real-description", "short_branch": None})
+
+    def test_unconfigured_labels_preserve_full_branch(self):
+        for indented in (True, False):
+            with self.subTest(indented=indented):
+                result = plugin.labels(self.workspace, {"custom_name": None}, self.branch,
+                                       indented, plugin.formatter({}))
+                self.assertEqual(result, {
+                    "short_space": self.branch if indented else "checkout-name",
+                    "short_branch": None if indented else self.branch,
+                })
 
     def test_root_retains_repo_name_and_formats_branch(self):
         self.assertEqual(self.labels({"custom_name": None}, indented=False),

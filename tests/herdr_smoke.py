@@ -169,7 +169,7 @@ def smoke(root, herdr, plugin_dir, servers):
     run_git("config", "user.email", "branch-labels@example.invalid")
     run_git("commit", "--allow-empty", "-m", "Fixture base")
     checkout = root / "folder-name-differs-from-branch"
-    branch = "feat/2026-09-10-invoice-validation"
+    branch = "feature/invoice-validation"
     run_git("worktree", "add", "-b", branch, str(checkout), "main")
 
     server = Server(root, herdr, env)
@@ -182,12 +182,21 @@ def smoke(root, herdr, plugin_dir, servers):
     parent_id, child_id = parent["workspace_id"], child["workspace_id"]
     original_labels = {parent_id: parent["label"], child_id: child["label"]}
     server.tokens(parent_id, "example-repo", "main")
+    server.tokens(child_id, branch)
+    assert run_git("branch", "--show-current", cwd=checkout) == branch
+    assert {wid: server.workspace(wid)["label"] for wid in original_labels} == original_labels
+    print("PASS: an unconfigured plugin preserves full branch names")
+
+    config_dir = root / "config" / "herdr" / "plugins" / "config" / PLUGIN_ID
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.json").write_text(json.dumps({"pattern": r"^feature/"}))
+    server.refresh()
     server.tokens(child_id, "invoice-validation")
     assert run_git("branch", "--show-current", cwd=checkout) == branch
     assert {wid: server.workspace(wid)["label"] for wid in original_labels} == original_labels
     print("PASS: grouped worktrees display the branch suffix without renaming branches or spaces")
 
-    next_branch = "fix/2026-09-10-checkout-transition"
+    next_branch = "feature/checkout-transition"
     run_git("checkout", "-b", next_branch, cwd=checkout)
     server.refresh()
     server.tokens(child_id, "checkout-transition")
@@ -195,7 +204,7 @@ def smoke(root, herdr, plugin_dir, servers):
     assert run_git("branch", "--show-current", cwd=checkout) == next_branch
     print("PASS: refresh follows branch checkout rather than the checkout directory name")
 
-    manual = "feat/2026-09-10-keep-this-manual-label"
+    manual = "feature/keep-this-manual-label"
     server.run("workspace", "rename", child_id, manual)
     server.tokens(child_id, manual)
     server.run("workspace", "focus", parent_id)
@@ -208,8 +217,6 @@ def smoke(root, herdr, plugin_dir, servers):
     assert server.workspace(child_id)["label"] == manual
     print("PASS: manual labels, including labels matching the prefix pattern, are preserved")
 
-    config_dir = root / "config" / "herdr" / "plugins" / "config" / PLUGIN_ID
-    config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config.json").write_text(json.dumps({
         "pattern": r"^ticket/[0-9]+-(.+)$", "replacement": r"\1",
     }))
